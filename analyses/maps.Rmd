@@ -1,0 +1,41 @@
+---
+title: ""
+author: ""
+date: ""
+output:
+  html_document:
+    self_contained: TRUE
+    code_folding: hide
+    toc: TRUE
+    toc_float: TRUE
+    mathjax: null
+    css: !expr here::here("www", "web_report.css")
+    editor_options:
+      chunk_output_type: console
+---
+
+```{css echo = FALSE}
+div.main-container {
+    max-width: 1600px;
+}
+
+img {
+  width:1600px;
+}
+
+```
+
+
+```{r header-image, fig.width = 5.14, fig.height = 1.46, echo = FALSE}
+
+# All defaults
+knitr::include_graphics(here::here("www", "images", "urban-institute-logo.png"))
+
+```
+
+# SSDI Hot Spot Maps
+
+**This page is under construction**
+
+
+
