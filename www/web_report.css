@@ -1,14 +1,10 @@
+/* Global Formats */
 .container-fluid {
   font-family: Lato, Arial, sans-serif;
 }
 
 .main-container {
   font-family: Lato, Arial, sans-serif;
-}
-
-/* make titles blue */
-h1 {
-  color: #1696d2;
 }
 
 /* title styles */
@@ -35,9 +31,9 @@ h4 {
     font-family:  Lato, Arial, sans-serif;
 }
 
-/* paragraph styles */
+/* paragraph styles */ 
 p {
-  font-size: 16px;
+  font-size: 14px;
   margin: 0 0 8px 0;
 }
 
@@ -46,7 +42,6 @@ img {
   padding: 36px 0 32px 0;
 }
 
-/* other styles */
 .navbar {
   background-color: #1696d2;
   color: #ffffff;
@@ -66,7 +61,13 @@ img {
   background-color: #FFFFFF;
 }
 
-/* Hyper-links */
+/* list styles */
+li {
+  font-size: 16px;
+}
+
+
+/* link styles */
 .a {
   color: #1696d2;
 }
@@ -96,6 +97,15 @@ img {
   border-radius: 0;
 }
 
+/* special styles */
+#date {
+  text-align: center;
+    font: italic 14px Georgia,serif;
+    color: #666;
+    margin-bottom: 2em;
+    margin-top: 2em;
+}
+
 @media print{
     /* remove elements */
     #TOC, #toc, #header-pinned{
@@ -118,16 +128,21 @@ img {
         display: block !important;
     }
   @page {
-    size: 210mm 297mm; /* portrait
+    size: 210mm 297mm; /* portrait 
     /* you can also specify margins here: */
-    margin: 15mm;
+    margin: 15mm;   
    /*margin-right: 45mm;  for compatibility with both A4 and Letter */
   }
   /* page breaks */
-  .printbreak {
+  .printbreak { 
     page-break-before: always;
   }
   .avoidpagebreak {
     break-inside: avoid-page;
   }
+}
+
+.p2 {
+  font-size: 14px;
+  margin: 0 0 8px 0;
 }

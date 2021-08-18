@@ -1,11 +1,11 @@
 ---
-title: ""
-author: ""
-date: ""
+title: ''
+author: ''
+date: ''
+font: Lato
 output:
   html_document:
     self_contained: TRUE
-    code_folding: hide
     toc: TRUE
     toc_float: TRUE
     mathjax: null
@@ -14,17 +14,15 @@ output:
       chunk_output_type: console
 ---
 
-```{css echo = FALSE}
-div.main-container {
-    max-width: 1600px;
-}
+```{r setup-rmarkdown, echo = FALSE}
 
-img {
-  width:1600px;
-}
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(error = TRUE)
+knitr::opts_chunk$set(results = 'asis')
 
 ```
-
 
 ```{r header-image, fig.width = 5.14, fig.height = 1.46, echo = FALSE}
 
