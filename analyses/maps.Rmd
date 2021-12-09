@@ -33,7 +33,406 @@ knitr::include_graphics(here::here("www", "images", "urban-institute-logo.png"))
 
 # SSDI Hot Spot Maps
 
-**This page is under construction**
+```{r rmarkdown-setup, echo = FALSE}
+knitr::opts_chunk$set(warning = FALSE)
+knitr::opts_chunk$set(message = FALSE)
+knitr::opts_chunk$set(echo = FALSE)
+knitr::opts_chunk$set(fig.width = 10)
+
+```
+
+```{r setup}
+library(tidyverse)
+library(tigris)
+library(sf)
+library(urbnthemes)
+library(haven) 
+library(gt)
+library(gridExtra)
+
+options(scipen = 999)
+options(tigris_use_cache = FALSE)
+
+set_urbn_defaults(style = "print")
+
+```
+
+```{r}
+source(here::here("R", "get_pumas.R"))
+source(here::here("R", "map_benefits.R"))
+source(here::here("R", "map_frequency.R"))
+
+```
+
+# DI Maps
+
+This document contains maps of Disability Insurance (DI) awards and hotspots by six different groups of diagnoses over time. All data are at the PUMA level and the six different diagnosis groups are:
+
+1. Mental disorders
+2. Musculoskeletal disorders
+3. Neoplasms, infectious diseases, and injuries
+4. Systems diseases
+5. Circulatory and respiratory disorders
+6. Other disorders, unknown, or missing
+
+Hotspots are defined as PUMAs where the share of all DI awards going to a specific diagnosis group is in the top 10% of PUMAs. 
+
+
+```{r shapefiles, results = "hide"}
+# Get PUMA Shapefiles
+shapefiles <- get_pumas()
+
+# set the CRS for the shapes
+shapefiles <- shapefiles %>%
+  st_transform(crs = "ESRI:102003")
+
+# separate and ellide Alaska and Hawaii
+territories <- c("Hawaii",
+                 "Alaska",
+                 "United States Virgin Islands",
+                 "Commonwealth of the Northern Mariana Islands",
+                 "Guam",
+                 "American Samoa",
+                 "Puerto Rico")
+
+states <- tigris::states(class = "sf", cb = TRUE) %>%
+  filter(!NAME %in% territories) %>%
+  st_transform(crs = "ESRI:102003")
+
+alaska_hawaii <- shapefiles %>%
+  filter(STATEFP %in% c("02", "15")) %>%
+  group_by(STATEFP) %>%
+  summarize(geometry = st_union(geometry))
+
+# combine elided Alaska and Hawaii with the other 48 states and DC
+states <- bind_rows(
+  states, 
+  alaska_hawaii
+)
+
+```
+
+```{r loaddidata, results="hide"}
+di <- read_dta(file = here::here("data", "puma0118_hotspots_stats.dta")) %>%
+  mutate(dxpriadult = as_factor(dxpriadult))
+
+# construct a per capita measure
+di <- di %>%
+  mutate(diaward_per_100k = diaward / (puma_pop / 100000))
+
+# construct a truncated per capita measure
+di <- di %>%
+  group_by(year, dxpriadult) %>%
+  mutate(
+    diaward_per_100k_trunc = 
+      ifelse(diaward_per_100k > quantile(diaward_per_100k, probs = 0.8, na.rm = TRUE), 
+             diaward_per_100k, 
+             NA)
+  ) %>%
+  ungroup()
+
+```
+
+
+```{r}
+# create a table for hotspot frequency in 2018
+hotspot_frequency <- di %>%
+  filter(year == 2018) %>%
+  group_by(pumaid) %>%
+  summarize(hotspot_frequency = sum(diaward_hot_q10, na.rm = TRUE)) %>%
+  arrange(desc(hotspot_frequency))
+
+```
+
+```{r}
+# create a data frame for hotspots over time
+# each row is the frequency that a PUMA is a hotspot for a diagnosis type
+di_over_time <- di %>%
+  filter(year >= 2005) %>%
+  group_by(pumaid, dxpriadult) %>%
+  summarize(hotspot_frequency = sum(diaward_hot_q10, na.rm = TRUE)) %>%
+  ungroup() %>%
+  mutate(hotspot_frequency = ifelse(hotspot_frequency == 0, NA, hotspot_frequency))
+
+```
+
+```{r colors}
+#https://coolors.co/800000-040f16
+grays <- c("#F2F2F2", "#BFBFBF", "#7F7F7F")
+reds <- c("#ffffff", 
+          "#FFADAD", 
+          "#f49f9f", 
+          "#ea9090",
+          "#df8282",
+          "#d57373",
+          "#ca6565",
+          "#c05757",
+          "#b54848",
+          "#aa3a3a",
+          "#a02b2b",
+          "#951d1d",
+          "#8b0e0e",
+          "#800000")
+
+blues <- c("#CFE8F3", 
+           "#B8DEEF", 
+           "#A2D4EC",
+           "#8AC9E7",
+           "#73BFE2",
+           "#46ABDB",
+           "#2EA0D6",
+           "#1696D2",
+           "#1483B8",
+           "#12719E",
+           "#0E5E84",
+           "#0A4C6A",
+           "#062635")
+
+```
+
+## 1. Mental Disorders {.tabset}
+
+```{r fig.height = 8}
+map_frequency(data = di_over_time, 
+              var = hotspot_frequency, 
+              disorder = "Mental disorders",
+              title = "Hotspot frequency (2005-2018)")
+
+```
+
+```{r}
+map_mental_disorders <- function(year) {
+  
+  cat("\n")
+  cat(paste("###", year))
+  cat("\n")
+  
+  map_benefits(data = di, 
+               map_year = year, 
+               var = diaward_pct, 
+               disorder = "Mental disorders",
+               title = "Percentage of DI Awardees with Diagnosis",
+               proportion = TRUE)
+  
+  cat("\n")
+  
+}
+
+```
+
+
+```{r map_mental_disorders, results = "asis"}
+map_mental_disorders(year = 2005)
+map_mental_disorders(year = 2006)
+map_mental_disorders(year = 2007)
+map_mental_disorders(year = 2008)
+map_mental_disorders(year = 2009)
+map_mental_disorders(year = 2010)
+map_mental_disorders(year = 2011)
+map_mental_disorders(year = 2012)
+map_mental_disorders(year = 2013)
+map_mental_disorders(year = 2014)
+map_mental_disorders(year = 2015)
+map_mental_disorders(year = 2016)
+map_mental_disorders(year = 2017)
+map_mental_disorders(year = 2018)
+
+```
+
+
+## 2. Musculoskeletal disorder {.tabset}
+
+```{r fig.height = 8}
+map_frequency(data = di_over_time, 
+              var = hotspot_frequency, 
+              disorder = "Musculoskeletal disorders",
+              title = "Hotspot frequency (2005-2018)")
+
+```
+
+```{r}
+map_musculoskeletal_disorders <- function(year) { 
+
+  cat("\n")
+  cat(paste("###", year))
+  cat("\n")
+  
+  map_benefits(data = di, 
+               map_year = year, 
+               var = diaward_pct, 
+               disorder = "Musculoskeletal disorders",
+               title = "Percentage of DI Awardees with Diagnosis",
+               proportion = TRUE)
+  
+  cat("\n")
+  
+}
+
+```
+
+```{r map_musculoskeletal_disorders, results = "asis"}
+map_musculoskeletal_disorders(year = 2005)
+map_musculoskeletal_disorders(year = 2006)
+map_musculoskeletal_disorders(year = 2007)
+map_musculoskeletal_disorders(year = 2008)
+map_musculoskeletal_disorders(year = 2009)
+map_musculoskeletal_disorders(year = 2010)
+map_musculoskeletal_disorders(year = 2011)
+map_musculoskeletal_disorders(year = 2012)
+map_musculoskeletal_disorders(year = 2013)
+map_musculoskeletal_disorders(year = 2014)
+map_musculoskeletal_disorders(year = 2015)
+map_musculoskeletal_disorders(year = 2016)
+map_musculoskeletal_disorders(year = 2017)
+map_musculoskeletal_disorders(year = 2018)
+
+```
+
+## 3. Neoplasms, infectious diseases, and injuries {.tabset}
+
+```{r fig.height = 8}
+map_frequency(data = di_over_time, 
+              var = hotspot_frequency, 
+              disorder = "Neoplasms, infectious diseases, and injuries",
+              title = "Hotspot frequency (2005-2018)")
+
+```
+
+```{r}
+map_neoplasms <- function(year) { 
+
+  cat("\n")
+  cat(paste("###", year))
+  cat("\n")
+  
+  map_benefits(data = di, 
+             map_year = year, 
+             var = diaward_pct, 
+             disorder = "Neoplasms, infectious diseases, and injuries",
+             title = "Percentage of DI Awardees with Diagnosis",
+             proportion = TRUE)
+  
+  cat("\n")
+  
+}
+  
+```
+
+```{r map_neoplasms, results = "asis"}
+map_neoplasms(year = 2005)
+map_neoplasms(year = 2006)
+map_neoplasms(year = 2007)
+map_neoplasms(year = 2008)
+map_neoplasms(year = 2009)
+map_neoplasms(year = 2010)
+map_neoplasms(year = 2011)
+map_neoplasms(year = 2012)
+map_neoplasms(year = 2013)
+map_neoplasms(year = 2014)
+map_neoplasms(year = 2015)
+map_neoplasms(year = 2016)
+map_neoplasms(year = 2017)
+map_neoplasms(year = 2018)
+
+```
+
+## 4. Systems diseases {.tabset}
+
+```{r fig.height = 8}
+map_frequency(data = di_over_time, 
+              var = hotspot_frequency, 
+              disorder = "Systems diseases",
+              title = "Hotspot frequency (2005-2018)")
+
+
+```
+
+```{r}
+map_systems_diseases <- function(year) { 
+  
+  cat("\n")
+  cat(paste("###", year))
+  cat("\n")
+  
+  map_benefits(data = di, 
+               map_year = year, 
+               var = diaward_pct, 
+               disorder = "Systems diseases",
+               title = "Percentage of DI Awardees with Diagnosis",
+               proportion = TRUE)
+  
+  cat("\n")
+  
+}
+  
+```
+
+```{r map_systems_diseases, results = "asis"}
+map_systems_diseases(year = 2005)
+map_systems_diseases(year = 2006)
+map_systems_diseases(year = 2007)
+map_systems_diseases(year = 2008)
+map_systems_diseases(year = 2009)
+map_systems_diseases(year = 2010)
+map_systems_diseases(year = 2011)
+map_systems_diseases(year = 2012)
+map_systems_diseases(year = 2013)
+map_systems_diseases(year = 2014)
+map_systems_diseases(year = 2015)
+map_systems_diseases(year = 2016)
+map_systems_diseases(year = 2017)
+map_systems_diseases(year = 2018)
+
+```
+
+## 5. Circulatory and respiratory disorders {.tabset}
+
+```{r fig.height = 8}
+map_frequency(data = di_over_time, 
+              var = hotspot_frequency, 
+              disorder = "Circulatory and respiratory disorders",
+              title = "Hotspot frequency (2005-2018)")
+
+```
+
+```{r}
+map_circ_resp <- function(year) { 
+  
+  cat("\n")
+  cat(paste("###", year))
+  cat("\n")
+  
+  map_benefits(data = di, 
+               map_year = year, 
+               var = diaward_pct, 
+               disorder = "Circulatory and respiratory disorders",
+               title = "Percentage of DI Awardees with Diagnosis",
+               proportion = TRUE)
+  
+  cat("\n")
+  
+}
+  
+```
+
+```{r map_circ_resp, results = "asis"}
+map_circ_resp(year = 2005)
+map_circ_resp(year = 2006)
+map_circ_resp(year = 2007)
+map_circ_resp(year = 2008)
+map_circ_resp(year = 2009)
+map_circ_resp(year = 2010)
+map_circ_resp(year = 2011)
+map_circ_resp(year = 2012)
+map_circ_resp(year = 2013)
+map_circ_resp(year = 2014)
+map_circ_resp(year = 2015)
+map_circ_resp(year = 2016)
+map_circ_resp(year = 2017)
+map_circ_resp(year = 2018)
+
+```
+
 
 
 
